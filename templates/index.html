@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Student Details</h1>
+
+<!-- Filter Form -->
+<form id="filterForm">
+    <input type="text" id="nameFilter" placeholder="Name">
+    <input type="number" id="minMarks" placeholder="Min Marks">
+    <input type="number" id="maxMarks" placeholder="Max Marks">
+    <button type="submit">Filter</button>
+</form>
+
+<!-- Student Grid -->
+<table id="studentTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Total Marks</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Filled by JavaScript -->
+    </tbody>
+</table>
+
+<!-- Pagination Controls -->
+<div id="pagination">
+    <button id="prevPage">Previous</button>
+    <button id="nextPage">Next</button>
+</div>
+
+<script>
+    let currentPage = 1;
+    let pageSize = 5;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadStudents();
+
+        document.getElementById('filterForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            filterStudents();
+        });
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadStudents();
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            currentPage++;
+            loadStudents();
+        });
+    });
+
+    function loadStudents() {
+        fetch(`/api/students?page=${currentPage}&page_size=${pageSize}`)
+            .then(response => response.json())
+            .then(data => {
+                const studentTableBody = document.getElementById('studentTable').querySelector('tbody');
+                studentTableBody.innerHTML = '';
+                data.students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${student.id}</td><td>${student.name}</td><td>${student.total_marks}</td>`;
+                    studentTableBody.appendChild(row);
+                });
+            });
+    }
+
+    function filterStudents() {
+        const name = document.getElementById('nameFilter').value;
+        const minMarks = document.getElementById('minMarks').value;
+        const maxMarks = document.getElementById('maxMarks').value;
+
+        const filters = {};
+        if (name) filters.name = name;
+        if (minMarks) filters.min_marks = parseInt(minMarks);
+        if (maxMarks) filters.max_marks = parseInt(maxMarks);
+
+        fetch('/api/filter/students', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(filters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const studentTableBody = document.getElementById('studentTable').querySelector('tbody');
+            studentTableBody.innerHTML = '';
+            data.students.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${student.id}</td><td>${student.name}</td><td>${student.total_marks}</td>`;
+                studentTableBody.appendChild(row);
+            });
+        });
+    }
+</script>
+{% endblock %}
